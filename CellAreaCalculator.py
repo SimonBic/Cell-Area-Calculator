@@ -8,7 +8,6 @@ from openpyxl.drawing.image import Image as XLImage
 import tempfile
 import os
 
-# --- Globale Variablen ---
 img = None
 tk_img = None
 drawing = False
@@ -18,16 +17,13 @@ output_pil = None
 zoom_factor = 1.0
 base_image = None
 image_width_px = 0
-pixel_size = 1.5  # Standardwert 1,5 nm
+pixel_size = 1.5 
 
-# --- Zeichnen starten ---
 def start_draw(event):
     global drawing, current_path, offset_x, offset_y
     drawing = True
-    # transformiere Mausposition auf Originalbild-Koordinaten
     current_path = [( (event.x - offset_x) / zoom_factor, (event.y - offset_y) / zoom_factor )]
 
-# --- Zeichnen ---
 def draw(event):
     global drawing, current_path
     if not drawing:
@@ -39,7 +35,6 @@ def draw(event):
                        offset_x + x*zoom_factor, offset_y + y*zoom_factor, fill="red", width=2)
     current_path.append((x, y))
 
-# --- Zeichnen beenden ---
 def end_draw(event):
     global drawing, paths, current_path
     if not drawing:
@@ -53,7 +48,6 @@ def end_draw(event):
         paths.append(current_path)
         aktualisiere_canvas()
 
-# --- Fläche berechnen ---
 def berechne_flaeche():
     global output_pil, pixel_size
     ergebnis_text.delete(1.0, tk.END)
@@ -64,13 +58,11 @@ def berechne_flaeche():
         ergebnis_text.insert(tk.END, "You did not draw any cells.\n")
         return
 
-    # --- Pixelgröße dynamisch anpassen ---
     try:
         real_width = float(real_width_entry.get())
         pixel_size = real_width / image_width_px
     except ValueError:
-        pixel_size = 1.5  # Standardwert
-
+        pixel_size = 1.5  
     output_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw_img = ImageDraw.Draw(output_pil)
 
@@ -105,7 +97,7 @@ def berechne_flaeche():
     ergebnis_text.insert(tk.END, f"average size: {durchschnitt:.5f} nm²\n")
     aktualisiere_canvas()
 
-# --- Kreis gezielt löschen ---
+
 def loesche_kreis():
     global paths
     try:
@@ -119,7 +111,6 @@ def loesche_kreis():
     except ValueError:
         messagebox.showwarning("Error", "Enter valid number")
 
-# --- Excel exportieren ---
 def export_excel():
     global output_pil
     if not paths:
@@ -156,12 +147,11 @@ def export_excel():
         tmp_file.close()
         os.unlink(tmp_file.name)
 
-# --- Bild laden ---
+
 from PIL import Image
 
 def lade_bild():
     global img, tk_img, base_image, zoom_factor, paths, image_width_px, pixel_size, output_pil
-    # Alte Daten zurücksetzen
     paths.clear()
     zoom_factor = 1.0
     output_pil = None
@@ -174,35 +164,30 @@ def lade_bild():
     if not filepath:
         return
 
-    # Windows: Backslashes durch Slashes ersetzen
     filepath = filepath.replace("\\", "/")
 
     try:
-        # Bild mit PIL laden (funktioniert bei fast allen Formaten)
         pil_img = Image.open(filepath).convert("RGB")
         base_image = pil_img
         image_width_px = base_image.width
 
-        # Optional: für OpenCV konvertieren
         img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
     except Exception as e:
         messagebox.showerror("Error", f"Could not load picture:\n{filepath}\n\n{e}")
         return
 
-    # Pixelgröße anhand Eingabefeld setzen
     try:
         real_width = float(real_width_entry.get())
         pixel_size = real_width / image_width_px
     except ValueError:
         pixel_size = 1.5  # Standardwert
 
-    # Bild sofort anzeigen (Canvas aktualisieren)
     aktualisiere_canvas()
 
 
 
-# globale Offsets für Bildposition
+
 offset_x = 0
 offset_y = 0
 
@@ -216,67 +201,54 @@ def aktualisiere_canvas():
     canvas.delete("all")
     canvas.create_image(offset_x, offset_y, anchor="nw", image=tk_img)
 
-    # Nummern und Pfade anzeigen
     for i, path in enumerate(paths, start=1):
         if len(path) < 2:
             continue
-        # transformiere Pfad-Koordinaten auf Canvas
         path_trans = [(offset_x + x*zoom_factor, offset_y + y*zoom_factor) for x,y in path]
 
-        # Linien verbinden
         for j in range(len(path_trans)-1):
             canvas.create_line(path_trans[j][0], path_trans[j][1],
                                path_trans[j+1][0], path_trans[j+1][1], fill="red", width=2)
-        # Nummer zentrieren
         cx = np.mean([x for x, y in path_trans])
         cy = np.mean([y for x, y in path_trans])
         canvas.create_text(cx, cy, text=str(i), fill="blue", font=("Arial", 16, "bold"))
 
-# --- Zoom ---
 def zoom(event):
     global zoom_factor, offset_x, offset_y
-    # Position der Maus relativ zum Bild
     mouse_x = event.x - offset_x
     mouse_y = event.y - offset_y
     rel_x = mouse_x / zoom_factor
     rel_y = mouse_y / zoom_factor
 
-    # Zoom-Faktor ändern
     if event.delta > 0 or getattr(event, 'num', None) == 4:
         zoom_factor *= 1.1
     else:
         zoom_factor /= 1.1
     zoom_factor = max(0.2, min(zoom_factor, 5.0))
 
-    # Offset so anpassen, dass Maus-Punkt stabil bleibt
     offset_x = event.x - rel_x * zoom_factor
     offset_y = event.y - rel_y * zoom_factor
 
     aktualisiere_canvas()
 
-# --- Undo ---
 def undo(event=None):
     global paths
     if paths:
         paths.pop()
         aktualisiere_canvas()
 
-# --- Text kopieren ---
 def kopiere_text():
-    # Text für Excel aufbereiten
     text = ""
     lines = ergebnis_text.get(1.0, tk.END).strip().split("\n")
     for line in lines:
-        # mehrere Leerzeichen durch Tab ersetzen
         line_tab = "\t".join(line.split())
         text += line_tab + "\n"
 
-    # In Zwischenablage kopieren
     root.clipboard_clear()
     root.clipboard_append(text)
     messagebox.showinfo("Copy", "Text copied in Excel format.")
 
-# --- GUI ---
+
 root = tk.Tk()
 root.title("Cell-Area-Calculator - Simon Bichler")
 
@@ -306,11 +278,9 @@ btn_delete.pack(side=tk.LEFT, padx=5)
 text_frame = tk.Frame(root)
 text_frame.pack(pady=5, fill=tk.BOTH, expand=True)
 
-# Ergebnisfeld links
 ergebnis_text = tk.Text(text_frame, width=60, height=20)
 ergebnis_text.pack(side=tk.LEFT, padx=5, fill=tk.BOTH, expand=True)
 
-# Infotextfeld rechts
 info_text = tk.Text(text_frame, width=30, height=20, bg="#f5f5f5", wrap=tk.WORD)
 info_text.pack(side=tk.RIGHT, padx=5, fill=tk.BOTH)
 info_text.insert(tk.END,
@@ -343,12 +313,12 @@ canvas.bind("<MouseWheel>", zoom)
 canvas.bind("<Button-4>", zoom)
 canvas.bind("<Button-5>", zoom)
 
-# --- Tastenkürzel ---
-root.bind("<Control-z>", undo)          # Strg+Z
-root.bind("b", lambda e: lade_bild())   # B: Bild laden
-root.bind("f", lambda e: berechne_flaeche()) # F: Flächen berechnen
-root.bind("e", lambda e: export_excel())     # E: Excel export
-root.bind("z", lambda e: undo())             # Z: letzten Kreis entfernen
-root.bind("c", lambda e: kopiere_text())    # C: Text kopieren
+root.bind("<Control-z>", undo)          
+root.bind("b", lambda e: lade_bild())  
+root.bind("f", lambda e: berechne_flaeche()) 
+root.bind("e", lambda e: export_excel())     
+root.bind("z", lambda e: undo())            
+root.bind("c", lambda e: kopiere_text())  
 
 root.mainloop()
+
