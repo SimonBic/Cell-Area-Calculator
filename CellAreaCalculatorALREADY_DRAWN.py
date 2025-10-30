@@ -1,4 +1,4 @@
-#DEMO Version
+#DEMO Version - CellAreaCalculator is the final version
 
 import cv2
 import numpy as np
@@ -190,3 +190,4 @@ canvas.pack()
 
 
 root.mainloop()
+
