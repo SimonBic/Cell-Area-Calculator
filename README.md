@@ -8,3 +8,5 @@ I would have liked to upload the .exe file as well, but the file size is too lar
 pyinstaller --onefile --windowed CellAreaCalculator.py
 
 Of course, you need to navigate to the folder first and install PyInstaller and any required packages.
+
+30.10.: I uploaded the Demo Version of the Cell Calculator, that automatically caluclates the size of already drawn colorfull circles on a greyscale backround.
