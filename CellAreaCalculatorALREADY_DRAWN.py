@@ -1,3 +1,5 @@
+#DEMO Version
+
 import cv2
 import numpy as np
 import tkinter as tk
@@ -21,7 +23,7 @@ def lade_bild():
                              "picture could not be loaded, no correct path was chosen.")
         return
 
-    # Verarbeitung
+   
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     try:
@@ -38,19 +40,17 @@ def lade_bild():
     lower_pink = np.array([lower_h, lower_s, lower_v])
     upper_pink = np.array([upper_h, upper_s, upper_v])
 
-    # --- Neue Schritte für schwammige Zellgrenzen ---
-    # 1. Glätten, um Rauschen zu reduzieren
+
     hsv_blur = cv2.GaussianBlur(hsv, (5, 5), 0)
 
-    # 2. Maske erstellen
+
     mask = cv2.inRange(hsv_blur, lower_pink, upper_pink)
 
-    # 3. Morphologische Operationen (Close → Open)
+
     kernel = np.ones((3, 3), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
 
-    # --- Konturen finden ---
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     ergebnis_text.delete(1.0, tk.END)
@@ -71,7 +71,7 @@ def lade_bild():
             area_px = cv2.contourArea(c)
             radius_px = (area_px / np.pi) ** 0.5
 
-            # Reale Werte berechnen
+    
             area_real = area_px * (pixel_size ** 2)
             radius_real = radius_px * pixel_size
 
@@ -92,11 +92,11 @@ def lade_bild():
                              f"Accumulated Radius ≈ {gesamtradius:.2f} px ({gesamtradius_real:.2f} real)\n"
                              )
 
-    # Ausgabe-Bild mit erkannten Konturen
+
     output = img.copy()
     cv2.drawContours(output, contours, -1, (255, 0, 0), 2)
 
-    # Anzeige im GUI
+
     output_rgb = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
     output_pil = Image.fromarray(output_rgb)
     tk_img = ImageTk.PhotoImage(output_pil)
@@ -106,7 +106,7 @@ def lade_bild():
     canvas.config(scrollregion=canvas.bbox(tk.ALL))
 
 
-# --- Restliches GUI wie vorher ---
+
 root = tk.Tk()
 root.title("Cell Are Calculator with Cells already drawn")
 
@@ -187,5 +187,6 @@ canvas_frame.pack()
 
 canvas = tk.Canvas(canvas_frame, width=1280, height=720, bg="gray90")
 canvas.pack()
+
 
 root.mainloop()
